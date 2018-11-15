@@ -3,6 +3,6 @@
         "port": "4000"
     },
     "dbConfig": {
-        "connectionstring": ""
+        "connectionstring": "mongodb://moe:pw1234@ds037778.mlab.com:37778/volunetdb"
     }
 }

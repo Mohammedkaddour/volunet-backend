@@ -2,10 +2,12 @@ const uuid = require('uuid/v4');
 //sessions
 module.exports = class SessionsPool {
     constructor(sessions) {
+
         this.sessions = {};
         if (sessions) {
             this.sessions = sessions;
         };
+        
         this.setNewUserSession = this.setNewUserSession.bind(this);
         this.getUserBySession = this.getUserBySession.bind(this);
         this.getSessionByUser = this.getSessionByUser.bind(this);

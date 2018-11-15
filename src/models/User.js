@@ -6,7 +6,7 @@ const Experience = require('./Experience');
 
 
 const UserSchema = new Schema({
-    email: {
+    username: {
         type: String,
         required: true,
         index: {
@@ -23,7 +23,7 @@ const UserSchema = new Schema({
     },
     address: {
         type: AddressSchema,
-        required: true
+        required: false
     },
     phonenumbers: [{
         type: String,
@@ -40,8 +40,7 @@ const UserSchema = new Schema({
     experiences: [{
         type: Schema.Types.ObjectId,
         ref: 'experience',
-        required: false,
-        unique: true
+        required: false
     }],
     causes: [{
         type: Schema.Types.ObjectId,
