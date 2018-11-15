@@ -277,30 +277,6 @@ app.get("/user/", function(req, res) {
     });
 });
 
-// app.put("/user/experiences/add",function(req,res){
-
-// if (req.cookies.SID === undefined) {
-//     sendFailResponse(res, "not authorized ! - sessionid not found");
-//     return;
-//   }
-//   let sessionid = req.cookies.SID;
-//   let userid = sessions.getUserBySession(sessionid);
-//   if (userid === undefined) {
-//     sendFailResponse(res, "not authorized ! - sessionid not recognized");
-//     return;
-//   }
-//   let parsed = JSON.parse(req.body)
-
-//   let title = parsed.title
-//   let description = parsed.description
-//   let startdate = parsed.startdate
-//   let enddate= parsed.enddate
-
-//   User.findOneAndUpdate({_id: userid},{$set:{
-//     experiences: {}
-//   }})
-// })
-
 app.get("/causes", function(req, res) {
   if (req.cookies.SID === undefined) {
     sendFailResponse(res, "not authorized ! - sessionid not found");
@@ -432,14 +408,100 @@ app.get("/user/causes", function(req, res) {
     sendFailResponse(res, "not authorized ! - sessionid not recognized");
     return;
   }
-  User.findOne({_id:userid})
+  User.findOne({ _id: userid })
     .populate("causes")
     .exec(function(err, user) {
       if (err) {
         sendFailResponse(res, "error finding user's causes" + err.message);
       } else {
-
-        sendSuccessResponse(res, "the user cause return successfully","user causes", user.causes);
+        sendSuccessResponse(
+          res,
+          "the user cause return successfully",
+          "user causes",
+          user.causes
+        );
       }
     });
 });
+
+app.put("/user/experiences/add", function(req, res) {
+  if (req.cookies.SID === undefined) {
+    sendFailResponse(res, "not authorized ! - sessionid not found");
+    return;
+  }
+  let sessionid = req.cookies.SID;
+  let userid = sessions.getUserBySession(sessionid);
+  if (userid === undefined) {
+    sendFailResponse(res, "not authorized ! - sessionid not recognized");
+    return;
+  }
+
+  let parsed = JSON.parse(req.body);
+  let title = parsed.title;
+  let description = parsed.description;
+  let startdate = parsed.startdate;
+  let enddate = parsed.enddate;
+
+  experience = new Experience({
+    title: title,
+    description: description,
+    startdate: startdate,
+    enddate: enddate
+  });
+  experience.save(function(err) {
+    if (err) {
+      sendFailResponse(res, "error saving experince" + err.message);
+    }
+  });
+
+  User.findOne({ _id: userid })
+    .populate("experiences")
+    .exec(function(err, user) {
+      if (err) {
+        sendFailResponse(res, "error finding user" + err.message);
+      } else {
+        user.experiences.push(experience.id);
+        user.save(function(err) {
+          if (err) {
+            sendFailResponse(res, "error saving user experiences" + err.message);
+          } else {
+            sendSuccessResponse(res, "user experiences successfully added");
+          }
+        });
+      }      
+    });
+});
+
+app.delete("/user/experiences/remove", function(req,res){
+
+  if (req.cookies.SID === undefined) {
+    sendFailResponse(res, "not authorized ! - sessionid not found");
+    return;
+  }
+  let sessionid = req.cookies.SID;
+  let userid = sessions.getUserBySession(sessionid);
+  if (userid === undefined) {
+    sendFailResponse(res, "not authorized ! - sessionid not recognized");
+    return;
+  }
+  let experienceid = JSON.parse(req.body).id
+  User.findOne({_id: userid})
+  .populate("experiences")
+  .exec(function(err,user){
+    if(err){ sendFailResponse(res, "error finding user "+err.message)}
+    else { 
+      let del = function(x){
+        if(x.id !== experienceid){
+          return x
+        } else{return}
+      }
+      user.experiences = user.experiences.filter(del)
+      user.save(function(err){
+        if(err){sendFailResponse(res, "error saving user"+err.message)}
+        else{ 
+          sendSuccessResponse(res, " experience removed successfully")
+        }
+      })
+    }
+  })
+})

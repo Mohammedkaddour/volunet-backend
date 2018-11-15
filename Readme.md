@@ -9,3 +9,8 @@
 - /user/causes/add | PUT
 - /user/causes/remove | DELETE
 - /user/causes | GET
+- /user/experiences/add | PUT
+- /user/experiences/remove | DELETE
+
+
+#undone EndPoints:
