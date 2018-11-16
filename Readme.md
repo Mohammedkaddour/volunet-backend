@@ -14,8 +14,11 @@
 - /projects/add |PUT
 - /projects/remove |DELETE
 - /projects   |GET
+- /user/:id |GET
+- /projects/follow/:projectid | PUT
+- /projects/unfollow/:projectid | DELETE
 
 #undone EndPoints:
 
-- /user/:id |GET
-- /projects/follow/:projectid | PUT
+
+

@@ -267,13 +267,16 @@ app.get("/user/", function(req, res) {
   }
   //["causes", "experiences","experiences.causes"]
   User.findOne({ _id: userid })
-    .populate([{
-      path:'experiences',
-      populate:{
-        path:'causes',
-        model:'cause'
-      }
-    },"causes"])
+    .populate([
+      {
+        path: "experiences",
+        populate: {
+          path: "causes",
+          model: "cause"
+        }
+      },
+      "causes"
+    ])
     .exec(function(err, result) {
       if (err) {
         sendFailResponse(res, "err finding user" + err.message);
@@ -447,7 +450,7 @@ app.put("/user/experiences/add", function(req, res) {
   let description = parsed.description;
   let startdate = parsed.startdate;
   let enddate = parsed.enddate;
-  let causes = parsed.causes
+  let causes = parsed.causes;
 
   experience = new Experience({
     title: title,
@@ -586,7 +589,7 @@ app.delete("/projects/remove", function(req, res) {
   });
 });
 
-app.get("/projects", function(req,res){
+app.get("/projects", function(req, res) {
   if (req.cookies.SID === undefined) {
     sendFailResponse(res, "not authorized ! - sessionid not found");
     return;
@@ -599,15 +602,22 @@ app.get("/projects", function(req,res){
   }
 
   Project.find({})
-  .exec(function(err,projects){
-    if (err) {sendFailResponse(res, "error finding projects "+ err.message)}
-    else{
-      sendSuccessResponse(res, "projects returned successfully ","Projects",projects)
-    }
-  })
-})
+    .populate(["followers", "causes"])
+    .exec(function(err, projects) {
+      if (err) {
+        sendFailResponse(res, "error finding projects " + err.message);
+      } else {
+        sendSuccessResponse(
+          res,
+          "projects returned successfully ",
+          "Projects",
+          projects
+        );
+      }
+    });
+});
 
-app.get("/user/:id", function(req,res){
+app.get("/user/:id", function(req, res) {
   if (req.cookies.SID === undefined) {
     sendFailResponse(res, "not authorized ! - sessionid not found");
     return;
@@ -619,11 +629,108 @@ app.get("/user/:id", function(req,res){
     return;
   }
 
-  User.findOne({_id: req.params.id})
-  .exec(function(err,user){
-    if(err) {sendFailResponse(res, "error finding user by id"+err.message)}
-    else{
-      sendFailResponse(res, "user returned successfully", "user", user)
+  User.findOne({ _id: req.params.id }).exec(function(err, user) {
+    if (err) {
+      sendFailResponse(res, "error finding user by id" + err.message);
+    } else {
+      sendFailResponse(res, "user returned successfully", "user", user);
     }
-  })
-})
+  });
+});
+
+app.put("/projects/follow/:projectid", function(req, res) {
+  if (req.cookies.SID === undefined) {
+    sendFailResponse(res, "not authorized ! - sessionid not found");
+    return;
+  }
+  let sessionid = req.cookies.SID;
+  let userid = sessions.getUserBySession(sessionid);
+  if (userid === undefined) {
+    sendFailResponse(res, "not authorized ! - sessionid not recognized");
+    return;
+  }
+
+  User.findOne({ _id: userid }).exec(function(err, user) {
+    if (err) {
+      sendFailResponse(res, "error finding user " + err.message);
+    } else {
+      Project.findOne({ _id: req.params.projectid })
+      .exec(function(err,project) {
+        if (err) {
+          sendFailResponse(res, "error finding project" + err.message);
+        } else {
+          let alreadyfollowed = false;
+          for (let i = 0; i < project.followers.length; i++) {
+            if (user.id === project.followers[i]._id.toString()) {
+              alreadyfollowed = true;
+            }
+          }
+          if ((alreadyfollowed === true)) {
+            sendFailResponse(res, "you already followed this project");
+          } else {
+            project.followers.push(user.id);
+            project.save(function(err) {
+              if (err) {
+                sendFailResponse(
+                  res,
+                  "error saving follower to project" + err.message
+                );
+              } else {
+                sendSuccessResponse(
+                  res,
+                  "user followed the project successfully"
+                );
+              }
+            });
+          }
+        }
+      });
+    }
+  });
+});
+
+app.delete("/projects/unfollow/:projectid", function(req, res) {
+  if (req.cookies.SID === undefined) {
+    sendFailResponse(res, "not authorized ! - sessionid not found");
+    return;
+  }
+  let sessionid = req.cookies.SID;
+  let userid = sessions.getUserBySession(sessionid);
+  if (userid === undefined) {
+    sendFailResponse(res, "not authorized ! - sessionid not recognized");
+    return;
+  }
+  User.findOne({ _id: userid }).exec(function(err, user) {
+    if (err) {
+      sendFailResponse(res, "error finding user" + err.message);
+    } else {
+      Project.findOne({ _id: req.params.projectid }).exec(function(
+        err,
+        project
+      ) {
+        if (err) {
+          sendFailResponse(res, "error finding project " + err.message);
+        } else {
+          let del = function(x) {
+            if (x._id.toString() !== user.id) {
+              return true;
+            } else {
+              return;
+            }
+          };
+          project.followers = project.followers.filter(del);
+          project.save(function(err) {
+            if (err) {
+              sendFailResponse(
+                res,
+                "error unfollow the project " + err.message
+              );
+            } else {
+              sendSuccessResponse(res, "successfully unfollowed this project");
+            }
+          });
+        }
+      });
+    }
+  });
+});
