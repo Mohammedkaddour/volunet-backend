@@ -19,7 +19,7 @@ let sessions = new SessionsPool();
 const Address = require("./models/Address");
 const Cause = require("./models/Cause");
 const Experience = require("./models/Experience");
-const Post = require("./models/Post");
+//const Post = require("./models/Post");
 const Project = require("./models/Project");
 const User = require("./models/User");
 
@@ -734,3 +734,80 @@ app.delete("/projects/unfollow/:projectid", function(req, res) {
     }
   });
 });
+
+
+app.put("/projects/posts/add", function(req,res){
+
+  if (req.cookies.SID === undefined) {
+    sendFailResponse(res, "not authorized ! - sessionid not found");
+    return;
+  }
+  let sessionid = req.cookies.SID;
+  let userid = sessions.getUserBySession(sessionid);
+  if (userid === undefined) {
+    sendFailResponse(res, "not authorized ! - sessionid not recognized");
+    return;
+  }
+
+  let parsed = JSON.parse(req.body)
+  let content = parsed.content
+  let projectid = parsed.projectid
+
+  User.findOne({_id: userid})
+  .exec(function(err,user){
+    if(err) {sendFailResponse(res, "error finding user "+err.message)}
+    else{
+      Project.findOne({_id: projectid})
+      .exec(function(err,project){
+        if(err) {sendFailResponse(res,"error finding project"+err.message)}
+        else{
+          let arrposts={user:user, content: content, timestamp: new Date()}
+          project.posts.push(arrposts)
+          project.save(function(err){
+            if(err) {
+              sendFailResponse(res, "error saving project"+err.message)
+            }
+            else{
+              sendSuccessResponse(res, "post has been created")
+            }
+          })          
+        }
+      })
+    }
+  })
+})
+
+
+app.get("/projects/:projectid", function(req,res){
+
+ if (req.cookies.SID === undefined) {
+    sendFailResponse(res, "not authorized ! - sessionid not found");
+    return;
+  }
+  let sessionid = req.cookies.SID;
+  let userid = sessions.getUserBySession(sessionid);
+  if (userid === undefined) {
+    sendFailResponse(res, "not authorized ! - sessionid not recognized");
+    return;
+  }
+  Project.findOne({_id: req.params.projectid})
+  .populate([{
+    path:"posts.user",
+    model:"user",
+    select:"fullname _id"
+  },"causes","followers"])
+  .exec(function(err,project){
+    if(err){ sendFailResponse(res, "error finding project")}
+    else {
+      sendSuccessResponse(res, "project returned successfully","project",project)}
+  })
+  
+})
+
+// {
+//   path:"posts",
+//   populate:{
+//     path:"user",
+//     model: "user"
+//   }
+// }

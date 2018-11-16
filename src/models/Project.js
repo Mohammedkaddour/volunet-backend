@@ -54,6 +54,23 @@ const ProjectSchema = new Schema({
     type: AddressSchema,
     required: true
   },
+  posts: [
+    {
+      user: {
+        type: Schema.Types.ObjectId,
+        ref: "user",
+        required: true
+      },
+      content: {
+        type: String,
+        required: true
+      },
+      timestamp: {
+        type: Date,
+        required: true
+      }
+    }
+  ],
   image: {
     type: String,
     required: false
