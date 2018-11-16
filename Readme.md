@@ -11,6 +11,11 @@
 - /user/causes | GET
 - /user/experiences/add | PUT
 - /user/experiences/remove | DELETE
-
+- /projects/add |PUT
+- /projects/remove |DELETE
+- /projects   |GET
 
 #undone EndPoints:
+
+- /user/:id |GET
+- /projects/follow/:projectid | PUT

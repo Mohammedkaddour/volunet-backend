@@ -265,9 +265,15 @@ app.get("/user/", function(req, res) {
     sendFailResponse(res, "not authorized ! - sessionid not recognized");
     return;
   }
-
+  //["causes", "experiences","experiences.causes"]
   User.findOne({ _id: userid })
-    .populate(["causes", "experiences"])
+    .populate([{
+      path:'experiences',
+      populate:{
+        path:'causes',
+        model:'cause'
+      }
+    },"causes"])
     .exec(function(err, result) {
       if (err) {
         sendFailResponse(res, "err finding user" + err.message);
@@ -441,12 +447,14 @@ app.put("/user/experiences/add", function(req, res) {
   let description = parsed.description;
   let startdate = parsed.startdate;
   let enddate = parsed.enddate;
+  let causes = parsed.causes
 
   experience = new Experience({
     title: title,
     description: description,
     startdate: startdate,
-    enddate: enddate
+    enddate: enddate,
+    causes: causes
   });
   experience.save(function(err) {
     if (err) {
@@ -463,17 +471,19 @@ app.put("/user/experiences/add", function(req, res) {
         user.experiences.push(experience.id);
         user.save(function(err) {
           if (err) {
-            sendFailResponse(res, "error saving user experiences" + err.message);
+            sendFailResponse(
+              res,
+              "error saving user experiences" + err.message
+            );
           } else {
             sendSuccessResponse(res, "user experiences successfully added");
           }
         });
-      }      
+      }
     });
 });
 
-app.delete("/user/experiences/remove", function(req,res){
-
+app.delete("/user/experiences/remove", function(req, res) {
   if (req.cookies.SID === undefined) {
     sendFailResponse(res, "not authorized ! - sessionid not found");
     return;
@@ -484,24 +494,136 @@ app.delete("/user/experiences/remove", function(req,res){
     sendFailResponse(res, "not authorized ! - sessionid not recognized");
     return;
   }
-  let experienceid = JSON.parse(req.body).id
-  User.findOne({_id: userid})
-  .populate("experiences")
-  .exec(function(err,user){
-    if(err){ sendFailResponse(res, "error finding user "+err.message)}
-    else { 
-      let del = function(x){
-        if(x.id !== experienceid){
-          return x
-        } else{return}
+  let experienceid = JSON.parse(req.body).id;
+  User.findOne({ _id: userid })
+    .populate("experiences")
+    .exec(function(err, user) {
+      if (err) {
+        sendFailResponse(res, "error finding user " + err.message);
+      } else {
+        let del = function(x) {
+          if (x.id !== experienceid) {
+            return x;
+          } else {
+            return;
+          }
+        };
+        user.experiences = user.experiences.filter(del);
+        user.save(function(err) {
+          if (err) {
+            sendFailResponse(res, "error saving user" + err.message);
+          } else {
+            sendSuccessResponse(res, " experience removed successfully");
+          }
+        });
       }
-      user.experiences = user.experiences.filter(del)
-      user.save(function(err){
-        if(err){sendFailResponse(res, "error saving user"+err.message)}
-        else{ 
-          sendSuccessResponse(res, " experience removed successfully")
+    });
+});
+
+app.put("/projects/add", function(req, res) {
+  if (req.cookies.SID === undefined) {
+    sendFailResponse(res, "not authorized ! - sessionid not found");
+    return;
+  }
+  let sessionid = req.cookies.SID;
+  let userid = sessions.getUserBySession(sessionid);
+  if (userid === undefined) {
+    sendFailResponse(res, "not authorized ! - sessionid not recognized");
+    return;
+  }
+
+  let parsed = JSON.parse(req.body);
+  let title = parsed.title;
+  let description = parsed.description;
+  let startdate = parsed.startdate;
+  let enddate = parsed.enddate;
+  let deadline = parsed.deadline;
+  let peopleneeded = parsed.peopleneeded;
+  let address = parsed.address;
+  User.findOne({ _id: userid }).exec(function(err, user) {
+    if (err) {
+      sendFailResponse(res, "error finding user" + err.message);
+    } else {
+      let project = new Project({
+        title: title,
+        description: description,
+        startdate: startdate,
+        enddate: enddate,
+        deadline: deadline,
+        peopleneeded: peopleneeded,
+        owner: user,
+        address: address
+      });
+      project.save(function(err) {
+        if (err) {
+          sendFailResponse(res, "error saving project " + err.message);
+        } else {
+          sendSuccessResponse(res, "project add successfully");
         }
-      })
+      });
+    }
+  });
+});
+
+app.delete("/projects/remove", function(req, res) {
+  if (req.cookies.SID === undefined) {
+    sendFailResponse(res, "not authorized ! - sessionid not found");
+    return;
+  }
+  let sessionid = req.cookies.SID;
+  let userid = sessions.getUserBySession(sessionid);
+  if (userid === undefined) {
+    sendFailResponse(res, "not authorized ! - sessionid not recognized");
+    return;
+  }
+  let projectid = JSON.parse(req.body).id;
+  Project.findByIdAndRemove({ _id: projectid }).exec(function(err, result) {
+    if (err) {
+      sendFailResponse(res, "error removing project" + err.message);
+    } else {
+      sendSuccessResponse(res, "project removed successfully");
+    }
+  });
+});
+
+app.get("/projects", function(req,res){
+  if (req.cookies.SID === undefined) {
+    sendFailResponse(res, "not authorized ! - sessionid not found");
+    return;
+  }
+  let sessionid = req.cookies.SID;
+  let userid = sessions.getUserBySession(sessionid);
+  if (userid === undefined) {
+    sendFailResponse(res, "not authorized ! - sessionid not recognized");
+    return;
+  }
+
+  Project.find({})
+  .exec(function(err,projects){
+    if (err) {sendFailResponse(res, "error finding projects "+ err.message)}
+    else{
+      sendSuccessResponse(res, "projects returned successfully ","Projects",projects)
+    }
+  })
+})
+
+app.get("/user/:id", function(req,res){
+  if (req.cookies.SID === undefined) {
+    sendFailResponse(res, "not authorized ! - sessionid not found");
+    return;
+  }
+  let sessionid = req.cookies.SID;
+  let userid = sessions.getUserBySession(sessionid);
+  if (userid === undefined) {
+    sendFailResponse(res, "not authorized ! - sessionid not recognized");
+    return;
+  }
+
+  User.findOne({_id: req.params.id})
+  .exec(function(err,user){
+    if(err) {sendFailResponse(res, "error finding user by id"+err.message)}
+    else{
+      sendFailResponse(res, "user returned successfully", "user", user)
     }
   })
 })
