@@ -602,11 +602,19 @@ app.get("/projects", function(req, res) {
   }
 
   Project.find({})
-    .populate(["followers", "causes"])
+    .populate(["followers", "causes", "owner"])
     .exec(function(err, projects) {
       if (err) {
         sendFailResponse(res, "error finding projects " + err.message);
       } else {
+        let nowTime = new Date();
+        let sortByEndDate = function(x) {
+          if (x.enddate > nowTime) {
+            return true;
+          }
+          else {return}
+        };
+        projects= projects.filter(sortByEndDate)
         sendSuccessResponse(
           res,
           "projects returned successfully ",
@@ -654,8 +662,10 @@ app.put("/projects/follow/:projectid", function(req, res) {
     if (err) {
       sendFailResponse(res, "error finding user " + err.message);
     } else {
-      Project.findOne({ _id: req.params.projectid })
-      .exec(function(err,project) {
+      Project.findOne({ _id: req.params.projectid }).exec(function(
+        err,
+        project
+      ) {
         if (err) {
           sendFailResponse(res, "error finding project" + err.message);
         } else {
@@ -665,7 +675,7 @@ app.put("/projects/follow/:projectid", function(req, res) {
               alreadyfollowed = true;
             }
           }
-          if ((alreadyfollowed === true)) {
+          if (alreadyfollowed === true) {
             sendFailResponse(res, "you already followed this project");
           } else {
             project.followers.push(user.id);
@@ -735,9 +745,7 @@ app.delete("/projects/unfollow/:projectid", function(req, res) {
   });
 });
 
-
-app.put("/projects/posts/add", function(req,res){
-
+app.put("/projects/posts/add", function(req, res) {
   if (req.cookies.SID === undefined) {
     sendFailResponse(res, "not authorized ! - sessionid not found");
     return;
@@ -749,38 +757,39 @@ app.put("/projects/posts/add", function(req,res){
     return;
   }
 
-  let parsed = JSON.parse(req.body)
-  let content = parsed.content
-  let projectid = parsed.projectid
+  let parsed = JSON.parse(req.body);
+  let content = parsed.content;
+  let projectid = parsed.projectid;
 
-  User.findOne({_id: userid})
-  .exec(function(err,user){
-    if(err) {sendFailResponse(res, "error finding user "+err.message)}
-    else{
-      Project.findOne({_id: projectid})
-      .exec(function(err,project){
-        if(err) {sendFailResponse(res,"error finding project"+err.message)}
-        else{
-          let arrposts={user:user, content: content, timestamp: new Date()}
-          project.posts.push(arrposts)
-          project.save(function(err){
-            if(err) {
-              sendFailResponse(res, "error saving project"+err.message)
+  User.findOne({ _id: userid }).exec(function(err, user) {
+    if (err) {
+      sendFailResponse(res, "error finding user " + err.message);
+    } else {
+      Project.findOne({ _id: projectid }).exec(function(err, project) {
+        if (err) {
+          sendFailResponse(res, "error finding project" + err.message);
+        } else {
+          let arrposts = {
+            user: user,
+            content: content,
+            timestamp: new Date()
+          };
+          project.posts.push(arrposts);
+          project.save(function(err) {
+            if (err) {
+              sendFailResponse(res, "error saving project" + err.message);
+            } else {
+              sendSuccessResponse(res, "post has been created");
             }
-            else{
-              sendSuccessResponse(res, "post has been created")
-            }
-          })          
+          });
         }
-      })
+      });
     }
-  })
-})
+  });
+});
 
-
-app.get("/projects/:projectid", function(req,res){
-
- if (req.cookies.SID === undefined) {
+app.get("/projects/:projectid", function(req, res) {
+  if (req.cookies.SID === undefined) {
     sendFailResponse(res, "not authorized ! - sessionid not found");
     return;
   }
@@ -790,19 +799,29 @@ app.get("/projects/:projectid", function(req,res){
     sendFailResponse(res, "not authorized ! - sessionid not recognized");
     return;
   }
-  Project.findOne({_id: req.params.projectid})
-  .populate([{
-    path:"posts.user",
-    model:"user",
-    select:"fullname _id"
-  },"causes","followers"])
-  .exec(function(err,project){
-    if(err){ sendFailResponse(res, "error finding project")}
-    else {
-      sendSuccessResponse(res, "project returned successfully","project",project)}
-  })
-  
-})
+  Project.findOne({ _id: req.params.projectid })
+    .populate([
+      {
+        path: "posts.user",
+        model: "user",
+        select: "fullname _id"
+      },
+      "causes",
+      "followers"
+    ])
+    .exec(function(err, project) {
+      if (err) {
+        sendFailResponse(res, "error finding project");
+      } else {
+        sendSuccessResponse(
+          res,
+          "project returned successfully",
+          "project",
+          project
+        );
+      }
+    });
+});
 
 // {
 //   path:"posts",
