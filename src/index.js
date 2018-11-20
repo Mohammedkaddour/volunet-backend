@@ -642,11 +642,22 @@ app.get("/user/:id", function(req, res) {
     return;
   }
 
-  User.findOne({ _id: req.params.id }).exec(function(err, user) {
+  User.findOne({ _id: req.params.id })
+  .populate([
+    {
+      path: "experiences",
+      populate: {
+        path: "causes",
+        model: "cause"
+      }
+    },
+    "causes"
+  ])
+  .exec(function(err, user) {
     if (err) {
       sendFailResponse(res, "error finding user by id" + err.message);
     } else {
-      sendFailResponse(res, "user returned successfully", "user", user);
+      sendSuccessResponse(res, "user returned successfully", "user", user);
     }
   });
 });
