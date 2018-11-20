@@ -874,7 +874,7 @@ let searchinput = parsed.searchinput
         else{return}
       }
       projects = projects.filter(searchfunc)
-      sendSuccessResponse(res, "the process of the search process done successfully", "the result is", projects)
+      sendSuccessResponse(res, "the process of the search process done successfully", "projects", projects)
     }
   })
 })
