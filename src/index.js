@@ -861,14 +861,14 @@ app.post("/projects/search", function(req,res){
   }
 
   let parsed = JSON.parse(req.body)
-let searchinput = parsed.searchinput
+let searchinput = parsed.searchinput.toLowerCase()
   Project.find({})
   .populate(["followers", "causes", "owner"])
   .exec(function(err,projects){
     if(err) { sendFailResponse(err, "error finding project" +err.message)}
     else{
       let searchfunc = function(x){
-        if(x.title.includes(searchinput)|| x.description.includes(searchinput)){
+        if(x.title.toLowerCase().includes(searchinput)|| x.description.toLowerCase().includes(searchinput)|| x.owner.fullname.toLowerCase().includes(searchinput)){
           return true
         }
         else{return}
