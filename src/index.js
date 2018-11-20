@@ -543,6 +543,9 @@ app.put("/projects/add", function(req, res) {
   let deadline = parsed.deadline;
   let peopleneeded = parsed.peopleneeded;
   let address = parsed.address;
+  let image = parsed.image
+  let causes = parsed.causes
+
   User.findOne({ _id: userid }).exec(function(err, user) {
     if (err) {
       sendFailResponse(res, "error finding user" + err.message);
@@ -555,7 +558,9 @@ app.put("/projects/add", function(req, res) {
         deadline: deadline,
         peopleneeded: peopleneeded,
         owner: user,
-        address: address
+        address: address,
+        image: image,
+        causes: causes
       });
       project.save(function(err) {
         if (err) {
