@@ -830,3 +830,34 @@ app.get("/projects/:projectid", function(req, res) {
 //     model: "user"
 //   }
 // }
+
+app.post("/projects/search", function(req,res){
+  if (req.cookies.SID === undefined) {
+    sendFailResponse(res, "not authorized ! - sessionid not found");
+    return;
+  }
+  let sessionid = req.cookies.SID;
+  let userid = sessions.getUserBySession(sessionid);
+  if (userid === undefined) {
+    sendFailResponse(res, "not authorized ! - sessionid not recognized");
+    return;
+  }
+
+  let parsed = JSON.parse(req.body)
+let searchinput = parsed.searchinput
+  Project.find({})
+  .populate(["followers", "causes", "owner"])
+  .exec(function(err,projects){
+    if(err) { sendFailResponse(err, "error finding project" +err.message)}
+    else{
+      let searchfunc = function(x){
+        if(x.title.includes(searchinput)|| x.description.includes(searchinput)){
+          return true
+        }
+        else{return}
+      }
+      projects = projects.filter(searchfunc)
+      sendSuccessResponse(res, "the process of the search process done successfully", "the result is", projects)
+    }
+  })
+})

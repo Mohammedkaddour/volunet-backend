@@ -19,6 +19,7 @@
 - /projects/unfollow/:projectid | DELETE
 - /projects/:id
 - /projects/posts/add  |PUT
+- /projects/search /  POST
 
 #undone EndPoints:
 
