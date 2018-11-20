@@ -812,7 +812,8 @@ app.get("/projects/:projectid", function(req, res) {
         select: "fullname _id"
       },
       "causes",
-      "followers"
+      "followers",
+      "owner"
     ])
     .exec(function(err, project) {
       if (err) {
