@@ -5,7 +5,9 @@
   "main": "./src/index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "node ./src/index.js"
+    "start": "node ./src/index.js",
+    "snyk-protect": "snyk protect",
+    "prepare": "npm run snyk-protect"
   },
   "keywords": [],
   "author": "",
@@ -20,6 +22,8 @@
     "mongoose": "^5.3.11",
     "sha256": "^0.2.0",
     "uuid": "^3.3.2",
-    "winston": "^3.1.0"
-  }
+    "winston": "^3.1.0",
+    "snyk": "^1.316.1"
+  },
+  "snyk": true
 }
